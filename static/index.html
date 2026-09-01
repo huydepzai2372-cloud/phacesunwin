@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sòng Bạc Online</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #121a2a;
+        --panel-2: #1a2440;
+        --gold: #f7c948;
+        --green: #3ddc97;
+        --red: #ff6b6b;
+        --text: #edf2ff;
+        --muted: #a8b3cf;
+        --border: rgba(255,255,255,0.08);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0b1020, #111827 45%, #1d2433);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 32px auto;
+        padding: 24px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 20px;
+      }
+
+      .brand {
+        font-size: 2.2rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      .brand span { color: var(--gold); }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 24px;
+      }
+
+      .card {
+        background: rgba(18, 26, 42, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+      }
+
+      .panel-title {
+        margin: 0 0 16px;
+        font-size: 1.15rem;
+        color: var(--gold);
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+
+      input, select, button {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        font-size: 1rem;
+      }
+
+      input, select {
+        background: #0f172a;
+        color: var(--text);
+      }
+
+      button {
+        background: linear-gradient(135deg, #f7c948, #f59e0b);
+        color: #111827;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.15s ease;
+      }
+
+      button:hover { transform: translateY(-1px); }
+
+      .primary {
+        background: linear-gradient(135deg, #34d399, #10b981);
+        color: #04130d;
+      }
+
+      .secondary {
+        background: linear-gradient(135deg, #60a5fa, #2563eb);
+        color: white;
+      }
+
+      .stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(100px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .stat-box {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .stat-box small { color: var(--muted); display: block; }
+      .stat-box strong { display: block; font-size: 1.25rem; margin-top: 8px; }
+
+      .result {
+        min-height: 180px;
+        background: #07101d;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 16px;
+        white-space: pre-wrap;
+        color: #dfe8ff;
+      }
+
+      .list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .list li {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .muted { color: var(--muted); }
+
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+        .header { flex-direction: column; align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="brand"><span>SÒNG</span> BẠC</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2 class="panel-title">Tạo hồ sơ và chơi</h2>
+
+          <div class="row">
+            <input id="name" type="text" placeholder="Tên người chơi" style="flex: 1; min-width: 180px;" />
+            <button id="createProfile" class="primary">Tạo hồ sơ</button>
+          </div>
+
+          <div class="row">
+            <select id="profileSelect" style="flex: 1; min-width: 180px;"></select>
+            <select id="choice">
+              <option value="t">Tài</option>
+              <option value="x">Xỉu</option>
+            </select>
+            <input id="bet" type="number" min="1" value="20" style="width: 110px;" />
+            <select id="betType">
+              <option value="custom">Cược tùy chọn</option>
+              <option value="half">Nửa</option>
+              <option value="all">All-in</option>
+            </select>
+            <button id="playBtn" class="secondary">Chơi</button>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-box">
+              <small>Hồ sơ</small>
+              <strong id="profileCount">0</strong>
+            </div>
+            <div class="stat-box">
+              <small>Top tiền</small>
+              <strong id="topBalance">0K</strong>
+            </div>
+            <div class="stat-box">
+              <small>Top winrate</small>
+              <strong id="topWinrate">0%</strong>
+            </div>
+          </div>
+
+          <div class="result" id="resultBox">Chưa có dữ liệu. Hãy tạo hồ sơ và bắt đầu chơi.</div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom: 24px;">
+            <h3 class="panel-title">Bảng xếp hạng</h3>
+            <ul id="leaderboardList" class="list"></ul>
+          </div>
+
+          <div class="card">
+            <h3 class="panel-title">Lịch sử</h3>
+            <ul id="historyList" class="list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const resultBox = document.getElementById('resultBox');
+      const profileSelect = document.getElementById('profileSelect');
+      const leaderboardList = document.getElementById('leaderboardList');
+      const historyList = document.getElementById('historyList');
+
+      async function loadProfiles() {
+        const res = await fetch('/api/profiles');
+        const data = await res.json();
+        const list = data.profiles || {};
+        profileSelect.innerHTML = '';
+
+        Object.keys(list).forEach((name) => {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          profileSelect.appendChild(option);
+        });
+
+        document.getElementById('profileCount').textContent = Object.keys(list).length;
+        const top = Object.values(list).slice().sort((a, b) => b.balance - a.balance)[0];
+        if (top) {
+          document.getElementById('topBalance').textContent = `${top.balance}K`;
+        }
+
+        await loadLeaderboard();
+        await loadHistory();
+      }
+
+      async function loadLeaderboard() {
+        const res = await fetch('/api/leaderboard');
+        const data = await res.json();
+        const rows = data.leaderboard || [];
+        leaderboardList.innerHTML = '';
+
+        rows.forEach((player, index) => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>#${index + 1} ${player.name}</strong><br><span class="muted">Số dư: ${player.balance}K • Winrate: ${player.winrate}% • Thắng lớn: ${player.biggest_win}K</span>`;
+          leaderboardList.appendChild(li);
+        });
+
+        if (rows[0]) {
+          document.getElementById('topWinrate').textContent = `${rows[0].winrate}%`;
+        }
+      }
+
+      async function loadHistory() {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        const items = data.history || [];
+        historyList.innerHTML = '';
+
+        items.slice(0, 8).forEach((player) => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>${player.name}</strong><br><span class="muted">Ván: ${player.rounds} • Thắng: ${player.wins} • Thua: ${player.losses} • Số dư: ${player.balance}K</span>`;
+          historyList.appendChild(li);
+        });
+      }
+
+      document.getElementById('createProfile').addEventListener('click', async () => {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+          resultBox.textContent = 'Vui lòng nhập tên người chơi.';
+          return;
+        }
+
+        const res = await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          resultBox.textContent = data.detail || 'Không thể tạo hồ sơ.';
+          return;
+        }
+
+        resultBox.textContent = `Tạo hồ sơ thành công cho ${data.profile.name}.`; 
+        document.getElementById('name').value = '';
+        await loadProfiles();
+        profileSelect.value = data.profile.name;
+      });
+
+      document.getElementById('playBtn').addEventListener('click', async () => {
+        const profileName = profileSelect.value;
+        const choice = document.getElementById('choice').value;
+        const bet = Number(document.getElementById('bet').value || 0);
+        const betType = document.getElementById('betType').value;
+
+        if (!profileName) {
+          resultBox.textContent = 'Vui lòng tạo hoặc chọn hồ sơ trước.';
+          return;
+        }
+
+        const res = await fetch('/api/play', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_name: profileName, choice, bet, bet_type: betType })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          resultBox.textContent = data.detail || 'Có lỗi khi chơi.';
+          return;
+        }
+
+        resultBox.textContent = `Kết quả: ${data.result.toUpperCase()} | Cược ${data.bet}K | Payout ${data.payout}K | Số dư ${data.balance}K | ${data.bonus_message || 'Không có bonus'}`;
+        await loadProfiles();
+      });
+
+      loadProfiles();
+    </script>
+  </body>
+</html>

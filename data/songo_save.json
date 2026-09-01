@@ -1,0 +1,207 @@
+{
+  "1": {
+    "name": "1",
+    "mode": "normal",
+    "balance": 0,
+    "debt": 0,
+    "history": [
+      {
+        "round": 1,
+        "bet": 100,
+        "choice": "t",
+        "dice": "2,1,4",
+        "total": 7,
+        "result": "x",
+        "payout": -100,
+        "balance": 0,
+        "debt": 0
+      }
+    ],
+    "buff": null,
+    "event": null,
+    "recent_results": [
+      "XỈU"
+    ],
+    "quests": [
+      {
+        "id": "win3",
+        "title": "Thắng 3 ván",
+        "type": "win",
+        "target": 3,
+        "reward": 30,
+        "progress": 0,
+        "completed": false
+      },
+      {
+        "id": "round10",
+        "title": "Chơi 10 ván",
+        "type": "rounds",
+        "target": 10,
+        "reward": 40,
+        "progress": 1,
+        "completed": false
+      },
+      {
+        "id": "balance150",
+        "title": "Vượt 150K",
+        "type": "balance",
+        "target": 150,
+        "reward": 60,
+        "progress": 0,
+        "completed": false
+      }
+    ],
+    "stats": {
+      "rounds": 1,
+      "wins": 0,
+      "losses": 1,
+      "biggest_win": 0,
+      "biggest_loss": 100,
+      "peak_balance": 100,
+      "max_debt": 0
+    }
+  },
+  "djtmethgdtkkk": {
+    "name": "djtmethgdtkkk",
+    "mode": "normal",
+    "balance": 0,
+    "debt": 1434,
+    "history": [
+      {
+        "round": 1,
+        "bet": 100,
+        "choice": "t",
+        "dice": "3,5,2",
+        "total": 10,
+        "result": "x",
+        "payout": -100,
+        "balance": 0,
+        "debt": 0
+      },
+      {
+        "round": 2,
+        "bet": 50,
+        "choice": "x",
+        "dice": "2,2,4",
+        "total": 8,
+        "result": "x",
+        "payout": 100,
+        "balance": 150,
+        "debt": 60
+      },
+      {
+        "round": 3,
+        "bet": 150,
+        "choice": "t",
+        "dice": "1,3,4",
+        "total": 8,
+        "result": "x",
+        "payout": -150,
+        "balance": 0,
+        "debt": 0
+      },
+      {
+        "round": 4,
+        "bet": 500,
+        "choice": "t",
+        "dice": "6,3,1",
+        "total": 10,
+        "result": "x",
+        "payout": -500,
+        "balance": 0,
+        "debt": 600
+      },
+      {
+        "round": 5,
+        "bet": 50,
+        "choice": "x",
+        "dice": "2,4,5",
+        "total": 11,
+        "result": "t",
+        "payout": -50,
+        "balance": 0,
+        "debt": 780
+      },
+      {
+        "round": 6,
+        "bet": 50,
+        "choice": "t",
+        "dice": "6,1,5",
+        "total": 12,
+        "result": "t",
+        "payout": 100,
+        "balance": 150,
+        "debt": 996
+      },
+      {
+        "round": 7,
+        "bet": 75,
+        "choice": "x",
+        "dice": "2,4,6",
+        "total": 12,
+        "result": "t",
+        "payout": -75,
+        "balance": 75,
+        "debt": 1195
+      },
+      {
+        "round": 8,
+        "bet": 75,
+        "choice": "t",
+        "dice": "3,2,2",
+        "total": 7,
+        "result": "x",
+        "payout": -75,
+        "balance": 0,
+        "debt": 1434
+      }
+    ],
+    "buff": null,
+    "event": null,
+    "recent_results": [
+      "XỈU",
+      "TÀI",
+      "TÀI",
+      "TÀI",
+      "XỈU"
+    ],
+    "quests": [
+      {
+        "id": "win3",
+        "title": "Thắng 3 ván",
+        "type": "win",
+        "target": 3,
+        "reward": 30,
+        "progress": 2,
+        "completed": false
+      },
+      {
+        "id": "round10",
+        "title": "Chơi 10 ván",
+        "type": "rounds",
+        "target": 10,
+        "reward": 40,
+        "progress": 8,
+        "completed": false
+      },
+      {
+        "id": "balance150",
+        "title": "Vượt 150K",
+        "type": "balance",
+        "target": 150,
+        "reward": 60,
+        "progress": 150,
+        "completed": true
+      }
+    ],
+    "stats": {
+      "rounds": 8,
+      "wins": 2,
+      "losses": 6,
+      "biggest_win": 100,
+      "biggest_loss": 500,
+      "peak_balance": 150,
+      "max_debt": 1434
+    }
+  }
+}
