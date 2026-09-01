@@ -5,10 +5,10 @@ from app.config import SAVE_FILE, INITIAL_BALANCE, QUEST_TEMPLATE
 from app.database import load_profiles, save_profiles as save_profiles_db
 
 
-def load_saved_profiles() -> Dict[str, Dict]:
+def load_saved_profiles(user_email: str | None = None) -> Dict[str, Dict]:
     """Load all saved profiles from the database if available, otherwise fallback to JSON."""
     try:
-        profiles = load_profiles()
+        profiles = load_profiles(user_email)
         if profiles:
             return profiles
     except Exception:
@@ -19,15 +19,18 @@ def load_saved_profiles() -> Dict[str, Dict]:
         return {}
     try:
         with open(SAVE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if user_email is None:
+                return data
+            return {name: profile for name, profile in data.items() if profile.get("user_email") == user_email}
     except (json.JSONDecodeError, OSError):
         return {}
 
 
-def save_profiles(profiles: Dict[str, Dict]) -> None:
+def save_profiles(profiles: Dict[str, Dict], user_email: str | None = None) -> None:
     """Save all profiles to database and keep JSON fallback for compatibility."""
     try:
-        save_profiles_db(profiles)
+        save_profiles_db(profiles, user_email)
     except Exception:
         pass
 
@@ -38,11 +41,12 @@ def save_profiles(profiles: Dict[str, Dict]) -> None:
         pass
 
 
-def create_profile(name: str) -> Dict:
+def create_profile(name: str, user_email: str | None = None) -> Dict:
     """Create a new player profile with default settings."""
     profile = {
         "name": name,
-        "mode": "normal",  # Always use normal mode
+        "user_email": user_email,
+        "mode": "normal",
         "balance": INITIAL_BALANCE,
         "debt": 0,
         "history": [],

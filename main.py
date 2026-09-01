@@ -1,13 +1,17 @@
+import os
+import secrets
 from pathlib import Path
+from urllib.parse import quote, urlencode
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+import httpx
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.cau_analyzer import get_cau_signal
 from app.config import BUFF_POOL, EVENT_POOL, GAME_MODE
-from app.database import init_db
+from app.database import create_user, get_user_by_email, init_db, verify_user
 from app.game_logic import (
     apply_interest,
     calculate_payout,
@@ -19,12 +23,27 @@ from app.profile_manager import create_profile, load_saved_profiles, save_profil
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-session-secret")
 
 app = FastAPI(title="Sòng Bạc Web", version="1.0.0")
 init_db()
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 
 class CreateProfileRequest(BaseModel):
@@ -36,6 +55,16 @@ class PlayRequest(BaseModel):
     choice: str
     bet: int = 0
     bet_type: str = "custom"
+
+
+def get_user_from_header(request: Request):
+    email = request.headers.get("x-user-email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=401, detail="Bạn cần đăng nhập trước")
+    user = get_user_by_email(email)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Tài khoản không hợp lệ")
+    return user
 
 
 @app.get("/")
@@ -51,24 +80,116 @@ async def health():
     return {"status": "ok", "app": "song-bac-web"}
 
 
+@app.get("/auth/google/login")
+async def google_login():
+    if not GOOGLE_CLIENT_ID:
+        return RedirectResponse(url="/?auth_error=google_not_configured", status_code=302)
+
+    state = secrets.token_urlsafe(32)
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "consent",
+        "state": state,
+    }
+    target = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    response = RedirectResponse(url=target)
+    response.set_cookie(
+        key="google_oauth_state",
+        value=state,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return response
+
+
+@app.get("/auth/google/callback")
+async def google_callback(request: Request):
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        return RedirectResponse(url="/?auth_error=google_not_configured", status_code=302)
+
+    code = request.query_params.get("code")
+    state = request.query_params.get("state")
+    cookie_state = request.cookies.get("google_oauth_state")
+
+    if not code or not state or state != cookie_state:
+        raise HTTPException(status_code=400, detail="Yêu cầu Google OAuth không hợp lệ")
+
+    token_payload = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        token_response = await client.post("https://oauth2.googleapis.com/token", data=token_payload)
+        token_response.raise_for_status()
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Không lấy được access token từ Google")
+
+        user_info_response = await client.get(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        user_info_response.raise_for_status()
+        profile = user_info_response.json()
+
+    email = (profile.get("email") or "").strip().lower()
+    name = (profile.get("name") or profile.get("given_name") or email.split("@", 1)[0]).strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="Google không trả về email hợp lệ")
+
+    user = get_user_by_email(email)
+    if user is None:
+        user = create_user(email=email, name=name, password=f"google_{secrets.token_urlsafe(16)}")
+
+    redirect = RedirectResponse(url=f"/?google_auth=1&email={quote(email)}&name={quote(name)}")
+    redirect.delete_cookie("google_oauth_state")
+    return redirect
+
+
+@app.post("/api/auth/signup")
+async def signup(request: SignupRequest):
+    email = request.email.strip().lower()
+    name = request.name.strip()
+    password = request.password.strip()
+
+    if not name or not email or not password:
+        raise HTTPException(status_code=400, detail="Tên, email và mật khẩu không được để trống")
+    if get_user_by_email(email):
+        raise HTTPException(status_code=400, detail="Email đã tồn tại")
+
+    user = create_user(email=email, name=name, password=password)
+    return {"message": "Đăng ký thành công", "user": user}
+
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    user = verify_user(request.email.strip().lower(), request.password.strip())
+    if user is None:
+        raise HTTPException(status_code=401, detail="Email hoặc mật khẩu không đúng")
+    return {"message": "Đăng nhập thành công", "user": user}
+
+
 @app.get("/api/profiles")
-async def get_profiles():
-    profiles = load_saved_profiles()
+async def get_profiles(request: Request):
+    user = get_user_from_header(request)
+    profiles = load_saved_profiles(user["email"])
     return {"profiles": profiles}
 
 
-@app.get("/api/profiles/{profile_name}")
-async def get_profile(profile_name: str):
-    profiles = load_saved_profiles()
-    profile = profiles.get(profile_name)
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return {"profile": profile}
-
-
 @app.get("/api/leaderboard")
-async def get_leaderboard():
-    profiles = load_saved_profiles()
+async def get_leaderboard(request: Request):
+    user = get_user_from_header(request)
+    profiles = load_saved_profiles(user["email"])
     rows = []
     for name, profile in profiles.items():
         stats = profile.get("stats", {})
@@ -91,8 +212,9 @@ async def get_leaderboard():
 
 
 @app.get("/api/history")
-async def get_history(profile_name: str | None = None):
-    profiles = load_saved_profiles()
+async def get_history(request: Request, profile_name: str | None = None):
+    user = get_user_from_header(request)
+    profiles = load_saved_profiles(user["email"])
     if profile_name:
         profile = profiles.get(profile_name)
         if profile is None:
@@ -117,41 +239,43 @@ async def get_history(profile_name: str | None = None):
 
 
 @app.post("/api/profiles")
-async def create_profile_api(request: CreateProfileRequest):
-    profiles = load_saved_profiles()
-    name = request.name.strip() or "Người chơi"
+async def create_profile_api(request: Request, payload: CreateProfileRequest):
+    user = get_user_from_header(request)
+    profiles = load_saved_profiles(user["email"])
+    name = payload.name.strip() or "Người chơi"
 
     if name in profiles:
         return {"message": "Profile already exists", "profile": profiles[name]}
 
-    profile = create_profile(name)
+    profile = create_profile(name, user_email=user["email"])
     profiles[name] = profile
-    save_profiles(profiles)
+    save_profiles(profiles, user["email"])
     return {"message": "Profile created", "profile": profile}
 
 
 @app.post("/api/play")
-async def play_round(request: PlayRequest):
-    profiles = load_saved_profiles()
-    profile = profiles.get(request.profile_name)
+async def play_round(request: Request, payload: PlayRequest):
+    user = get_user_from_header(request)
+    profiles = load_saved_profiles(user["email"])
+    profile = profiles.get(payload.profile_name)
     if profile is None:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    choice = request.choice.lower()
+    choice = payload.choice.lower()
     if choice not in {"t", "x"}:
         raise HTTPException(status_code=400, detail="Choice must be 't' or 'x'")
 
     if profile["balance"] <= 0 and profile["debt"] <= 0:
         raise HTTPException(status_code=400, detail="Bạn hết tiền và không thể tiếp tục")
 
-    if request.bet_type == "all":
+    if payload.bet_type == "all":
         bet = profile["balance"]
         multiplier = GAME_MODE["multiplier_all"]
-    elif request.bet_type == "half":
+    elif payload.bet_type == "half":
         bet = max(1, profile["balance"] // 2)
         multiplier = GAME_MODE["multiplier_half"]
     else:
-        bet = int(request.bet)
+        bet = int(payload.bet)
         multiplier = GAME_MODE["multiplier_half"]
 
     if bet <= 0:
@@ -225,7 +349,7 @@ async def play_round(request: PlayRequest):
 
     profile["buff"] = None
     profile["event"] = None
-    save_profiles(profiles)
+    save_profiles(profiles, user["email"])
 
     return {
         "message": "Round resolved",

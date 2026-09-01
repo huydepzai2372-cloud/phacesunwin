@@ -8,3 +8,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.13"
+      - key: GOOGLE_CLIENT_ID
+        value: ""
+      - key: GOOGLE_CLIENT_SECRET
+        value: ""
+      - key: GOOGLE_REDIRECT_URI
+        value: "https://your-render-app.onrender.com/auth/google/callback"
+      - key: SESSION_SECRET
+        value: "change-this-secret"
